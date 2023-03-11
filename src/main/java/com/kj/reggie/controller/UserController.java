@@ -8,18 +8,51 @@ import com.kj.reggie.utils.ValidateCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping("/user")
+    @RequestMapping("/user")
 @Slf4j
 public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+
+    @PostMapping("/sendMsg1")
+    public R<String> sendMsg1(String email){
+        //获取手机号/邮箱号
+        String phone = email;
+        log.info("phone:{}",phone);
+        String subject = "瑞吉餐购登录验证码";
+
+        if(StringUtils.isNotEmpty(phone)){
+            //生成随机的4位验证码
+            String code = ValidateCodeUtils.generateValidateCode(4).toString();
+            String context="欢迎使用瑞吉餐购，登录验证码为："+code+"五分钟钟内有效，请妥善保管!";
+            log.info(context);
+
+            log.info("code={}",code);
+
+            //调用阿里云提供的短信服务API完成发送短信
+            //SMSUtils.sendMessage("瑞吉外卖","",phone,code);
+            userService.sendMsg(phone,subject,context);
+            //需要将生成的验证码保存到Session
+            redisTemplate.opsForValue().set(phone,code,5, TimeUnit.MINUTES);
+            return R.success("手机验证码短信发送成功");
+        }
+
+        return R.error("短信发送失败");
+    }
+
 
     /**
      * 发送手机短信验证码
@@ -28,21 +61,24 @@ public class UserController {
      */
     @PostMapping("/sendMsg")
     public R<String> sendMsg(@RequestBody User user, HttpSession session){
-        //获取手机号
+        //获取手机号/邮箱号
         String phone = user.getPhone();
         log.info("phone:{}",phone);
+        String subject = "瑞吉餐购登录验证码";
 
         if(StringUtils.isNotEmpty(phone)){
             //生成随机的4位验证码
             String code = ValidateCodeUtils.generateValidateCode(4).toString();
+            String context="欢迎使用瑞吉餐购，登录验证码为："+code+"五分钟钟内有效，请妥善保管!";
+
             log.info("code={}",code);
 
             //调用阿里云提供的短信服务API完成发送短信
             //SMSUtils.sendMessage("瑞吉外卖","",phone,code);
-
+            userService.sendMsg(phone,subject,context);
             //需要将生成的验证码保存到Session
             session.setAttribute(phone,code);
-
+            redisTemplate.opsForValue().set(phone,code,5, TimeUnit.MINUTES);
             return R.success("手机验证码短信发送成功");
         }
 

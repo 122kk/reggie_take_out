@@ -14,9 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +38,9 @@ public class DishController {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 新增菜品
@@ -114,6 +119,14 @@ public class DishController {
 
     @GetMapping("/list")
     public R<List<DishDto>> list(Dish dish){
+        List<DishDto> list=null;
+        String key="dish_"+dish.getCategoryId()+"_"+dish.getStatus();
+        list= (List<DishDto>) redisTemplate.opsForValue().get(key);
+        log.info("从Redis中获取数据：{}",list);
+        if(list!=null){
+            log.info("从Redis中获取数据");
+            return R.success(list);
+        }
         log.info("dish:{}",dish);
         //条件构造器
         LambdaQueryWrapper<Dish> queryWrapper=new LambdaQueryWrapper<>();
@@ -138,6 +151,8 @@ public class DishController {
             dishDto.setFlavors(dishFlavorService.list(wrapper));
             return dishDto
 ;        }).collect(Collectors.toList());
+
+        redisTemplate.opsForValue().set(key,dishDtos,60, TimeUnit.MINUTES);
         return R.success(dishDtos);
     }
 }

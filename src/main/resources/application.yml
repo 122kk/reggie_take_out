@@ -7,9 +7,23 @@ spring:
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/reggie?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      url: jdbc:mysql://www.mjorkj.top:3306/reggie?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: root
       password: 15935728qaz
+
+  redis:
+    url: redis://www.mjorkj.top:6379
+  cache:
+    redis:
+      time-to-live: 18000
+
+#邮箱配置
+  mail:
+    host: smtp.qq.com  #发送邮件的服务器地址
+    username: 1654275119@qq.com #登录qq邮箱的账号
+    password: egtdwilclfticbhe #开启IMAP/SMTP服务，获得的授权码
+    default-encoding: utf-8
+
 mybatis-plus:
   configuration:
     #在映射实体或者属性时，将数据库中表名和字段名中的下划线去掉，按照驼峰命名法映射
